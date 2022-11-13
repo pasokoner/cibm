@@ -51,6 +51,16 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+enum Roles {
+  ADMIN
+  USER
+}
+
+enum UserStatus {
+  INACTIVE
+  ACTIVE
+}
+
 model User {
   id            String        @id @default(cuid())
   name          String?
@@ -60,6 +70,8 @@ model User {
   accounts      Account[]
   sessions      Session[]
   Transaction   Transaction[]
+  role          Roles         @default(USER)
+  Check         Check[]
 }
 
 model VerificationToken {
@@ -85,8 +97,7 @@ model Fund {
   id      String      @id @default(uuid())
   section FundSection
   status  FundStatus
-  bank    String
-  Bank    Bank[]
+  bank    Bank[]
 }
 
 model Bank {
@@ -97,7 +108,8 @@ model Bank {
 
   fundId      String
   fund        Fund          @relation(fields: [fundId], references: [id], onDelete: Cascade)
-  Transaction Transaction[]
+  transaction Transaction[]
+  Check       Check[]
 }
 
 enum Action {
@@ -107,12 +119,36 @@ enum Action {
 }
 
 model Transaction {
-  id     Int    @id @default(autoincrement())
-  amount Int
-  action Action
+  id            Int      @id @default(autoincrement())
+  amount        Int
+  action        Action
+  date          DateTime
+  description   String
+  dvNumber      String?
+  checkNumber   String?
+  depositNumber String?
+  userId        String
+  bankId        String
 
-  userId String
-  bankId String
+  bank Bank @relation(fields: [bankId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum CheckStatus {
+  RELEASED
+  UNRELEASED
+}
+
+model Check {
+  id          Int         @id @default(autoincrement())
+  amount      Int
+  date        DateTime
+  description String
+  dvNumber    String
+  checkNumber String
+  status      CheckStatus
+  userId      String
+  bankId      String
 
   bank Bank @relation(fields: [bankId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
