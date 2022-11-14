@@ -10,10 +10,9 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
 import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
-import SendToMobileIcon from "@mui/icons-material/SendToMobile";
-import PercentIcon from "@mui/icons-material/Percent";
-import IconButton from "@mui/material/IconButton";
 import Button from "@mui/material/Button";
+import LinearProgress from "@mui/material/LinearProgress";
+
 import { trpc } from "../../utils/trpc";
 
 import { useForm, SubmitHandler } from "react-hook-form";
@@ -39,7 +38,7 @@ type FormValues = {
 const Deposit: NextPage = () => {
   const { data } = trpc.funds.getAll.useQuery();
 
-  const { mutate } = trpc.funds.transact.useMutation({
+  const { mutate, isSuccess, isLoading } = trpc.funds.transact.useMutation({
     onSuccess: () => {
       reset();
     },
@@ -75,7 +74,7 @@ const Deposit: NextPage = () => {
         depositNumber: depositNumber,
         date: value.toDate(),
         description: description,
-        amount: parseInt(amount),
+        amount: amount,
       });
     } else {
       mutate({
@@ -84,7 +83,7 @@ const Deposit: NextPage = () => {
         depositNumber: depositNumber,
         date: new Date(),
         description: description,
-        amount: parseInt(amount),
+        amount: amount,
       });
     }
 
@@ -210,13 +209,21 @@ const Deposit: NextPage = () => {
             <TextField
               id="outlined-number"
               label="Enter Cash Receipt"
-              type="number"
+              type="float"
               required
               {...register("amount")}
             />
           </Stack>
 
-          <Button endIcon={<MonetizationOnIcon />} variant="contained" type="submit">
+          {isSuccess && <Typography color="success.main">Transaction success!</Typography>}
+
+          {isLoading && <LinearProgress />}
+          <Button
+            endIcon={<MonetizationOnIcon />}
+            variant="contained"
+            type="submit"
+            disabled={isLoading}
+          >
             Submit Deposit
           </Button>
         </Stack>

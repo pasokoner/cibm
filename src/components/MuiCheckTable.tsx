@@ -9,9 +9,13 @@ import TableHead from "@mui/material/TableHead";
 import TablePagination from "@mui/material/TablePagination";
 import TableRow from "@mui/material/TableRow";
 import { trpc } from "../utils/trpc";
+import { Button, ButtonGroup, IconButton, Typography } from "@mui/material";
+import NoteIcon from "@mui/icons-material/Note";
+import StrikethroughSIcon from "@mui/icons-material/StrikethroughS";
+import EditIcon from "@mui/icons-material/Edit";
 
 interface Column {
-  id: "dvNumber" | "checkNumber" | "date" | "description" | "amount" | "fund";
+  id: "dvNumber" | "checkNumber" | "date" | "description" | "amount" | "fund" | "checkId";
   label: string;
   maxWidth?: number;
   align?: "right";
@@ -52,6 +56,11 @@ const columns: readonly Column[] = [
     label: "Fund",
     maxWidth: 100,
   },
+  {
+    id: "checkId",
+    label: "Actions",
+    maxWidth: 100,
+  },
 ];
 
 interface Data {
@@ -61,6 +70,7 @@ interface Data {
   description: string;
   amount: number;
   fund: string;
+  checkId: number;
 }
 
 function createData(
@@ -69,9 +79,10 @@ function createData(
   date: Date,
   description: string,
   amount: number,
-  fund: string
+  fund: string,
+  checkId: number
 ): Data {
-  return { dvNumber, checkNumber, date, description, amount, fund };
+  return { dvNumber, checkNumber, date, description, amount, fund, checkId };
 }
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
@@ -98,9 +109,10 @@ type Props = {
   to: string;
   from: string;
   status: "RELEASED" | "UNRELEASED";
+  bankId?: string;
 };
 
-export default function MuiTable({ to, from, status }: Props) {
+export default function MuiTable({ to, from, status, bankId }: Props) {
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
 
@@ -113,10 +125,21 @@ export default function MuiTable({ to, from, status }: Props) {
     setPage(0);
   };
 
-  const { data, isLoading } = trpc.check.getAll.useQuery({
+  const { data, isLoading, refetch } = trpc.check.getAll.useQuery({
     to: to,
     from: from,
     status: status,
+    bankId: bankId,
+  });
+
+  const { data: fundDetails } = trpc.bank.details.useQuery({
+    bankId: bankId,
+  });
+
+  const { mutate: released } = trpc.check.released.useMutation({
+    onSuccess: () => {
+      refetch();
+    },
   });
 
   if (isLoading) {
@@ -125,62 +148,108 @@ export default function MuiTable({ to, from, status }: Props) {
 
   // const rows = [createData("55555", "1111232", new Date(), "Carlo", 23232, "sdsds")];
   const rows = data
-    ? data.map(({ dvNumber, checkNumber, date, description, amount, bank }) => {
-        return createData(dvNumber, checkNumber, date, description, amount, `${bank.acronym}`);
+    ? data.map(({ dvNumber, checkNumber, date, description, amount, bank, id }) => {
+        return createData(dvNumber, checkNumber, date, description, amount, `${bank.acronym}`, id);
       })
     : [];
 
+  console.log(fundDetails);
+
   return (
-    <Paper sx={{ width: "100%", overflow: "hidden" }}>
-      <TableContainer>
-        <Table stickyHeader aria-label="sticky table">
-          <TableHead>
-            <StyledTableRow>
-              {columns.map((column) => (
-                <StyledTableCell
-                  key={column.id}
-                  align={column.align}
-                  style={{ maxWidth: column.maxWidth, width: "500px" }}
-                >
-                  {column.label}
-                </StyledTableCell>
-              ))}
-            </StyledTableRow>
-          </TableHead>
-          <TableBody>
-            {rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
-              return (
-                <StyledTableRow hover role="checkbox" tabIndex={-1} key={row.checkNumber}>
-                  {columns.map((column) => {
-                    const value = row[column.id];
-                    return (
-                      <StyledTableCell key={column.id} align={column.align}>
-                        {typeof value !== "object" &&
-                          column.format &&
-                          typeof value === "number" &&
-                          column.format(value)}
+    <>
+      {fundDetails && (
+        <Typography gutterBottom variant="h6">
+          {" "}
+          {status} CHECK | {fundDetails.fund.section} Fund {fundDetails.acronym} |{" "}
+          <Typography component="span">{from}</Typography> |{" "}
+          <Typography component="span">{to}</Typography>
+        </Typography>
+      )}
 
-                        {typeof value === "object" && column.formatDate && column.formatDate(value)}
+      <Paper sx={{ width: "100%", overflow: "hidden" }}>
+        <TableContainer>
+          <Table stickyHeader aria-label="sticky table">
+            <TableHead>
+              <StyledTableRow>
+                {columns.map((column) => (
+                  <StyledTableCell
+                    key={column.id}
+                    align={column.align}
+                    style={{
+                      maxWidth: column.maxWidth,
+                      width: "500px",
+                      display: `${status === "RELEASED" && column.id === "checkId" ? "none" : ""}`,
+                    }}
+                  >
+                    {column.label}
+                  </StyledTableCell>
+                ))}
+              </StyledTableRow>
+            </TableHead>
+            <TableBody>
+              {rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
+                return (
+                  <StyledTableRow hover role="checkbox" tabIndex={-1} key={row.checkNumber}>
+                    {columns.map((column) => {
+                      const value = row[column.id];
+                      return (
+                        <StyledTableCell
+                          key={column.id}
+                          align={column.align}
+                          sx={{
+                            display: `${
+                              status === "RELEASED" && column.id === "checkId" ? "none" : ""
+                            }`,
+                          }}
+                        >
+                          {typeof value !== "object" &&
+                            column.format &&
+                            typeof value === "number" &&
+                            column.id !== "checkId" &&
+                            column.format(value)}
+                          {typeof value === "object" &&
+                            column.formatDate &&
+                            column.formatDate(value)}
+                          {typeof value === "string" && value}
 
-                        {typeof value === "string" && value}
-                      </StyledTableCell>
-                    );
-                  })}
-                </StyledTableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <TablePagination
-        rowsPerPageOptions={[10, 25, 100]}
-        component="div"
-        count={rows.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
-    </Paper>
+                          {column.id === "checkId" ? (
+                            <ButtonGroup>
+                              <IconButton
+                                onClick={() => {
+                                  released({ checkId: value as number });
+                                }}
+                              >
+                                <NoteIcon color="success" />
+                              </IconButton>
+                              <IconButton>
+                                <EditIcon color="info" />
+                              </IconButton>
+                              <IconButton>
+                                <StrikethroughSIcon color="error" />
+                              </IconButton>
+                            </ButtonGroup>
+                          ) : (
+                            ""
+                          )}
+                        </StyledTableCell>
+                      );
+                    })}
+                  </StyledTableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <TablePagination
+          rowsPerPageOptions={[10, 25, 100]}
+          component="div"
+          count={rows.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
+      </Paper>
+    </>
   );
 }

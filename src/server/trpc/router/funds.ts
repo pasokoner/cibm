@@ -31,13 +31,13 @@ export const fundsRouter = router({
         checkNumber: z.string().optional(),
         depositNumber: z.string().optional(),
         bankId: z.string(),
-        amount: z.number(),
+        amount: z.string(),
         description: z.string(),
         date: z.date(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { action, bankId, amount, description, date, dvNumber, checkNumber, depositNumber } =
+      let { action, bankId, amount, description, date, dvNumber, checkNumber, depositNumber } =
         input;
 
       const bankData = await ctx.prisma.bank.findFirst({
@@ -53,7 +53,7 @@ export const fundsRouter = router({
       let newEndingBalance = 0;
 
       if (action === "DIRECT" || action === "CASHDEPOSIT") {
-        newEndingBalance = bankData.endingBalance + amount;
+        newEndingBalance = bankData.endingBalance + parseFloat(amount);
         await ctx.prisma.$transaction([
           ctx.prisma.bank.update({
             where: {
@@ -68,7 +68,7 @@ export const fundsRouter = router({
               action: action,
               date: date,
               description: description,
-              amount: amount,
+              amount: parseFloat(amount),
               bankId: bankId,
               userId: "cla979of70000f1pgzi50s8wt",
               depositNumber: depositNumber,
@@ -79,7 +79,7 @@ export const fundsRouter = router({
       }
 
       if (action === "LOAN" && dvNumber && checkNumber) {
-        newEndingBalance = bankData.endingBalance - amount;
+        newEndingBalance = bankData.endingBalance - parseFloat(amount);
 
         await ctx.prisma.$transaction([
           ctx.prisma.bank.update({
@@ -95,7 +95,7 @@ export const fundsRouter = router({
               action: action,
               date: date,
               description: description,
-              amount: amount,
+              amount: parseFloat(amount),
               bankId: bankId,
               userId: "cla979of70000f1pgzi50s8wt",
               checkNumber: checkNumber,
@@ -107,7 +107,7 @@ export const fundsRouter = router({
             data: {
               date: date,
               description: description,
-              amount: amount,
+              amount: parseFloat(amount),
               bankId: bankId,
               userId: "cla979of70000f1pgzi50s8wt",
               checkNumber: checkNumber,

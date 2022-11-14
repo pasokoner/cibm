@@ -104,7 +104,7 @@ model Bank {
   id            String @id @default(uuid())
   name          String
   acronym       String
-  endingBalance Int
+  endingBalance Float
 
   fundId      String
   fund        Fund          @relation(fields: [fundId], references: [id], onDelete: Cascade)
@@ -120,7 +120,7 @@ enum Action {
 
 model Transaction {
   id            Int      @id @default(autoincrement())
-  amount        Int
+  amount        Float
   action        Action
   date          DateTime
   description   String
@@ -141,7 +141,7 @@ enum CheckStatus {
 
 model Check {
   id          Int         @id @default(autoincrement())
-  amount      Int
+  amount      Float
   date        DateTime
   description String
   dvNumber    String
@@ -149,6 +149,7 @@ model Check {
   status      CheckStatus
   userId      String
   bankId      String
+  updatedAt   DateTime    @updatedAt
 
   bank Bank @relation(fields: [bankId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

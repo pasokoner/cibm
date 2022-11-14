@@ -44,7 +44,7 @@ const CheckSelect = ({ handleClose, status }: Props) => {
 
   const [dateFrom, setDateFrom] = useState<Dayjs | null>(null);
   const [dateTo, setDateTo] = useState<Dayjs | null>(null);
-  const [fund, setFund] = useState("");
+  const [bankId, setBankId] = useState("");
 
   const handleFromDateChange = (newValue: Dayjs | null) => {
     setDateFrom(newValue);
@@ -55,18 +55,19 @@ const CheckSelect = ({ handleClose, status }: Props) => {
   };
 
   const handleFundChange = (event: SelectChangeEvent) => {
-    setFund(event.target.value as string);
+    setBankId(event.target.value as string);
   };
 
   const handleExtract = () => {
-    if (dateTo && dateFrom && fund) {
+    if (dateTo && dateFrom && bankId) {
+      handleClose();
       router.push({
         pathname: `/check/[status]`,
         query: {
           status: status,
           from: getFormattedDate(dateFrom.toDate()),
           to: getFormattedDate(dateTo.toDate()),
-          fund: fund,
+          bankId: bankId,
         },
       });
     }
@@ -83,6 +84,9 @@ const CheckSelect = ({ handleClose, status }: Props) => {
           bgcolor: "white",
           p: 2,
           borderRadius: "10px",
+          "& .MuiSvgIcon-root	": {
+            color: "black",
+          },
         }}
       >
         <Stack direction="row" justifyContent="space-between">
@@ -109,7 +113,7 @@ const CheckSelect = ({ handleClose, status }: Props) => {
               native
               id="grouped-native-select"
               label="Fund (--ALL--)"
-              value={fund}
+              value={bankId}
               onChange={handleFundChange}
               required
             >
