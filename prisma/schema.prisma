@@ -74,6 +74,11 @@ model User {
   Check         Check[]
 }
 
+model ValidUser {
+  id    String @default(cuid())
+  email String @unique
+}
+
 model VerificationToken {
   identifier String
   token      String   @unique
@@ -116,6 +121,7 @@ enum Action {
   LOAN
   CASHDEPOSIT
   DIRECT
+  EDITLOAN
 }
 
 model Transaction {
@@ -123,6 +129,7 @@ model Transaction {
   amount        Float
   action        Action
   date          DateTime
+  payee         String?
   description   String
   dvNumber      String?
   checkNumber   String?
@@ -137,14 +144,16 @@ model Transaction {
 enum CheckStatus {
   RELEASED
   UNRELEASED
+  CANCELLED
 }
 
 model Check {
   id          Int         @id @default(autoincrement())
   amount      Float
   date        DateTime
+  payee       String
   description String
-  dvNumber    String
+  dvNumber    String?
   checkNumber String
   status      CheckStatus
   userId      String

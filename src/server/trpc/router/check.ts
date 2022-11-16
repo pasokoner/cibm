@@ -1,40 +1,47 @@
 import { z } from "zod";
 
-import { router, publicProcedure } from "../trpc";
+import { router, protectedProcedure } from "../trpc";
 
 export const checkRouter = router({
-  getAll: publicProcedure
+  getAll: protectedProcedure
     .input(
       z.object({
         to: z.string(),
         from: z.string(),
-        status: z.enum(["RELEASED", "UNRELEASED"]),
-        bankId: z.string().nullish(),
+        status: z.enum(["RELEASED", "UNRELEASED", "CANCELLED"]),
+        bankId: z.string().optional(),
       })
     )
     .query(({ ctx, input }) => {
       const { to, from, status, bankId } = input;
-      return ctx.prisma.check.findMany({
+
+      const data = ctx.prisma.check.findMany({
         where: {
-          bankId: bankId ? bankId : undefined,
+          bankId: bankId,
           status: status,
           date: {
-            gte: new Date(from),
+            gte: new Date(new Date(from).setDate(new Date(from).getDate() - 1)),
           },
 
           AND: {
             date: {
-              lte: new Date(to),
+              lte: new Date(new Date(to).setDate(new Date(to).getDate() + 1)),
             },
           },
+        },
+
+        orderBy: {
+          date: "desc",
         },
 
         include: {
           bank: true,
         },
       });
+
+      return data;
     }),
-  released: publicProcedure
+  released: protectedProcedure
     .input(
       z.object({
         checkId: z.number(),
@@ -48,9 +55,109 @@ export const checkRouter = router({
 
         data: {
           status: "RELEASED",
+          userId: ctx.session?.user?.id,
         },
       });
 
       return {};
+    }),
+  cancelled: protectedProcedure
+    .input(
+      z.object({
+        checkId: z.number(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const data = await ctx.prisma.check.update({
+        where: {
+          id: input.checkId,
+        },
+
+        data: {
+          status: "CANCELLED",
+          userId: ctx.session?.user?.id,
+        },
+      });
+
+      return {};
+    }),
+  edit: protectedProcedure
+    .input(
+      z.object({
+        checkId: z.number(),
+        dvNumber: z.string().optional(),
+        checkNumber: z.string().optional(),
+        amount: z.string(),
+        description: z.string(),
+        payee: z.string().optional(),
+        date: z.date(),
+        lastAmount: z.number(),
+        lastCheckNumber: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const {
+        amount,
+        description,
+        payee,
+        date,
+        dvNumber,
+        checkNumber,
+        checkId,
+        lastAmount,
+        lastCheckNumber,
+      } = input;
+
+      const checkData = await ctx.prisma.check.findFirst({
+        where: {
+          id: checkId,
+        },
+
+        include: {
+          bank: true,
+        },
+      });
+
+      if (checkData) {
+        await ctx.prisma.$transaction([
+          ctx.prisma.bank.update({
+            where: {
+              id: checkData?.bankId,
+            },
+            data: {
+              endingBalance: checkData?.bank.endingBalance + lastAmount - parseFloat(amount),
+            },
+          }),
+          ctx.prisma.transaction.create({
+            data: {
+              action: "EDITLOAN",
+              bankId: checkData?.bankId,
+              date: date,
+              description: description,
+              payee: payee,
+              amount: parseFloat(amount),
+              userId: ctx.session.user.id,
+              checkNumber: checkNumber,
+              dvNumber: dvNumber,
+            },
+          }),
+          ctx.prisma.check.update({
+            where: {
+              id: checkId,
+            },
+            data: {
+              date: date,
+              description: description,
+              payee: payee,
+              amount: parseFloat(amount),
+              userId: ctx.session.user.id,
+              checkNumber: checkNumber,
+              dvNumber: dvNumber,
+            },
+          }),
+        ]);
+      }
+
+      return { message: "Successfully edited check" };
     }),
 });

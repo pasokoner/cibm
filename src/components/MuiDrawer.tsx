@@ -1,31 +1,38 @@
 import Link from "next/link";
 
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 
-import * as React from "react";
-import AppBar from "@mui/material/AppBar";
-import Box from "@mui/material/Box";
-import CssBaseline from "@mui/material/CssBaseline";
-import Divider from "@mui/material/Divider";
-import Drawer from "@mui/material/Drawer";
-import IconButton from "@mui/material/IconButton";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import ListItemButton from "@mui/material/ListItemButton";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
+import React from "react";
+
+import {
+  AppBar,
+  Box,
+  CssBaseline,
+  Divider,
+  Drawer,
+  IconButton,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Toolbar,
+  Typography,
+} from "@mui/material";
+
 import MenuIcon from "@mui/icons-material/Menu";
-import Toolbar from "@mui/material/Toolbar";
-import Typography from "@mui/material/Typography";
 
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 
+import CancelPresentationIcon from "@mui/icons-material/CancelPresentation";
 import NoteIcon from "@mui/icons-material/Note";
 import StrikethroughSIcon from "@mui/icons-material/StrikethroughS";
 
 import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
 import SendToMobileIcon from "@mui/icons-material/SendToMobile";
 import PercentIcon from "@mui/icons-material/Percent";
+
+import SupervisorAccountIcon from "@mui/icons-material/SupervisorAccount";
 
 import LogoutIcon from "@mui/icons-material/Logout";
 
@@ -45,14 +52,21 @@ interface Props {
 
 export default function MuiDrawer(props: Props) {
   const { window, children } = props;
+
+  const { data: sessionData } = useSession();
+
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [cancelled, setCancelled] = React.useState(false);
+  const [released, setReleased] = React.useState(false);
+  const [unreleased, setUnreleased] = React.useState(false);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
-  const [released, setReleased] = React.useState(false);
-  const [unreleased, setUnreleased] = React.useState(false);
+  const toggleCancelled = () => {
+    setCancelled((prevState) => !prevState);
+  };
 
   const toggleReleased = () => {
     setReleased((prevState) => !prevState);
@@ -76,7 +90,7 @@ export default function MuiDrawer(props: Props) {
             <ListItemIcon>
               <AccountCircleIcon fontSize="large" />
             </ListItemIcon>
-            <ListItemText primary="Carlo" />
+            <ListItemText primary={sessionData?.user?.name?.split(" ")[0]} />
           </ListItemButton>
         </ListItem>
       </List>
@@ -84,6 +98,17 @@ export default function MuiDrawer(props: Props) {
       <Divider />
 
       <List>
+        <ListItem disablePadding>
+          <ListItemButton onClick={toggleReleased}>
+            <ListItemIcon>
+              <CancelPresentationIcon />
+            </ListItemIcon>
+            <ListItemText primary="Cancelled Check" />
+          </ListItemButton>
+
+          {cancelled && <CheckSelect status="CANCELLED" handleClose={toggleCancelled} />}
+        </ListItem>
+
         <ListItem disablePadding>
           <ListItemButton onClick={toggleReleased}>
             <ListItemIcon>
@@ -147,6 +172,24 @@ export default function MuiDrawer(props: Props) {
             </ListItemButton>
           </ListItem>
         </Link>
+
+        {sessionData?.user?.role === "ADMIN" && (
+          <>
+            <Divider />
+            <Typography ml={2}>Accounts</Typography>
+
+            <Link href="/manage-account">
+              <ListItem disablePadding>
+                <ListItemButton>
+                  <ListItemIcon>
+                    <SupervisorAccountIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Manage Account" />
+                </ListItemButton>
+              </ListItem>
+            </Link>
+          </>
+        )}
 
         <ListItem disablePadding>
           <ListItemButton

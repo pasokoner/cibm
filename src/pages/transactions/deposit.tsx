@@ -1,8 +1,24 @@
 import { type NextPage } from "next";
 
+import type { GetServerSideProps } from "next";
+
+import { getSession } from "next-auth/react";
+
+import { trpc } from "../../utils/trpc";
+
 import { useState } from "react";
 
-import { Box, TextField, Typography, Stack, InputLabel, FormControl, Select } from "@mui/material";
+import {
+  Box,
+  TextField,
+  Typography,
+  Stack,
+  InputLabel,
+  FormControl,
+  Select,
+  Button,
+  LinearProgress,
+} from "@mui/material";
 
 import dayjs, { Dayjs } from "dayjs";
 import { DesktopDatePicker } from "@mui/x-date-pickers/DesktopDatePicker";
@@ -10,10 +26,6 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
 import MonetizationOnIcon from "@mui/icons-material/MonetizationOn";
-import Button from "@mui/material/Button";
-import LinearProgress from "@mui/material/LinearProgress";
-
-import { trpc } from "../../utils/trpc";
 
 import { useForm, SubmitHandler } from "react-hook-form";
 
@@ -47,16 +59,16 @@ const Deposit: NextPage = () => {
   const [value, setValue] = useState<Dayjs | null>(null);
   const [dateError, setDateError] = useState<string | undefined>();
 
-  const handleDateChange = (newValue: Dayjs | null) => {
-    setValue(newValue);
-  };
-
   const {
     register,
     handleSubmit,
     reset,
     // formState: { errors },
   } = useForm<FormValues>();
+
+  const handleDateChange = (newValue: Dayjs | null) => {
+    setValue(newValue);
+  };
 
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     const { bankId, depositNumber, description, amount } = data;
@@ -209,7 +221,8 @@ const Deposit: NextPage = () => {
             <TextField
               id="outlined-number"
               label="Enter Cash Receipt"
-              type="float"
+              helperText="Numeric value only"
+              inputProps={{ inputMode: "numeric", pattern: "[+-]?([0-9]*[.])?[0-9]+" }}
               required
               {...register("amount")}
             />
@@ -233,3 +246,20 @@ const Deposit: NextPage = () => {
 };
 
 export default Deposit;
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const session = await getSession(context);
+
+  if (!session) {
+    return {
+      redirect: {
+        destination: "/",
+        permanent: false,
+      },
+    };
+  }
+
+  return {
+    props: { session },
+  };
+};

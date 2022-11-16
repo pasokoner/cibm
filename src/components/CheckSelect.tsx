@@ -1,4 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
+
+import { trpc } from "../utils/trpc";
+
+import { useRouter } from "next/router";
 
 import {
   Backdrop,
@@ -11,19 +15,15 @@ import {
   Button,
   TextField,
   IconButton,
+  SelectChangeEvent,
 } from "@mui/material";
 
-import { SelectChangeEvent } from "@mui/material/Select";
+import CloseIcon from "@mui/icons-material/Close";
 
 import dayjs, { Dayjs } from "dayjs";
 import { DesktopDatePicker } from "@mui/x-date-pickers/DesktopDatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-
-import { useRouter } from "next/router";
-
-import { trpc } from "../utils/trpc";
-import CloseIcon from "@mui/icons-material/Close";
 
 const getFormattedDate = (value: Date) => {
   const year = value.getFullYear();
@@ -35,12 +35,13 @@ const getFormattedDate = (value: Date) => {
 
 type Props = {
   handleClose: () => void;
-  status: "RELEASED" | "UNRELEASED";
+  status: "RELEASED" | "UNRELEASED" | "CANCELLED";
 };
 
 const CheckSelect = ({ handleClose, status }: Props) => {
-  const { data } = trpc.funds.getAll.useQuery();
   const router = useRouter();
+
+  const { data, isLoading } = trpc.funds.getAll.useQuery();
 
   const [dateFrom, setDateFrom] = useState<Dayjs | null>(null);
   const [dateTo, setDateTo] = useState<Dayjs | null>(null);
@@ -124,7 +125,7 @@ const CheckSelect = ({ handleClose, status }: Props) => {
                   return (
                     <optgroup key={id} label={section}>
                       {bank &&
-                        bank.map(({ id, acronym }) => {
+                        bank.map(({ id, acronym, endingBalance }) => {
                           return (
                             <option key={id} value={id}>
                               {section} - {acronym}

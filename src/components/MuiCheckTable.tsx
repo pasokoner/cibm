@@ -1,18 +1,37 @@
-import * as React from "react";
-import { styled } from "@mui/material/styles";
-import Paper from "@mui/material/Paper";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell, { tableCellClasses } from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableHead from "@mui/material/TableHead";
-import TablePagination from "@mui/material/TablePagination";
-import TableRow from "@mui/material/TableRow";
+import React from "react";
+
+import { useSession } from "next-auth/react";
+
 import { trpc } from "../utils/trpc";
-import { Button, ButtonGroup, IconButton, Typography } from "@mui/material";
+
+import { styled } from "@mui/material/styles";
+
+import {
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  tableCellClasses,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
+  Button,
+  ButtonGroup,
+  IconButton,
+  Typography,
+  Stack,
+  LinearProgress,
+  Snackbar,
+} from "@mui/material";
+
+import MuiAlert, { AlertProps } from "@mui/material/Alert";
+
 import NoteIcon from "@mui/icons-material/Note";
 import StrikethroughSIcon from "@mui/icons-material/StrikethroughS";
 import EditIcon from "@mui/icons-material/Edit";
+import { Box } from "@mui/system";
+import EditCheck from "./EditCheck";
 
 interface Column {
   id: "dvNumber" | "checkNumber" | "date" | "description" | "amount" | "fund" | "checkId";
@@ -105,16 +124,56 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   },
 }));
 
+const Alert = React.forwardRef<HTMLDivElement, AlertProps>(function Alert(props, ref) {
+  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
+});
+
 type Props = {
   to: string;
   from: string;
-  status: "RELEASED" | "UNRELEASED";
+  status: "RELEASED" | "UNRELEASED" | "CANCELLED";
   bankId?: string;
 };
 
 export default function MuiTable({ to, from, status, bankId }: Props) {
+  const { data: sessionData } = useSession();
+
+  const { data: fundDetails } = trpc.bank.details.useQuery({
+    bankId: bankId,
+  });
+
+  const { data, isLoading, refetch, isSuccess } = trpc.check.getAll.useQuery({
+    to: to,
+    from: from,
+    status: status,
+    bankId: bankId,
+  });
+
+  const { mutate: released, isLoading: isReleasing } = trpc.check.released.useMutation({
+    onSuccess: () => {
+      refetch();
+      setPage(0);
+      setAlertSeverity("success");
+      setAlertMessage("Check released!");
+      handleOpenAlert();
+    },
+  });
+
+  const { mutate: cancelled, isLoading: isCancelling } = trpc.check.released.useMutation({
+    onSuccess: () => {
+      refetch();
+      setPage(0);
+      setAlertSeverity("error");
+      setAlertMessage("Check cancelled!");
+      handleOpenAlert();
+    },
+  });
+
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  const [openAlert, setOpenAlert] = React.useState(false);
+  const [alertMessage, setAlertMessage] = React.useState("");
+  const [alertSeverity, setAlertSeverity] = React.useState<"success" | "error">("success");
 
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
@@ -125,48 +184,73 @@ export default function MuiTable({ to, from, status, bankId }: Props) {
     setPage(0);
   };
 
-  const { data, isLoading, refetch } = trpc.check.getAll.useQuery({
-    to: to,
-    from: from,
-    status: status,
-    bankId: bankId,
-  });
+  const handleOpenAlert = () => {
+    setOpenAlert(true);
+  };
 
-  const { data: fundDetails } = trpc.bank.details.useQuery({
-    bankId: bankId,
-  });
+  const handleCloseAlert = (event?: React.SyntheticEvent | Event, reason?: string) => {
+    if (reason === "clickaway") {
+      return;
+    }
 
-  const { mutate: released } = trpc.check.released.useMutation({
-    onSuccess: () => {
-      refetch();
-    },
-  });
+    setOpenAlert(false);
+  };
 
   if (isLoading) {
     return <></>;
   }
 
-  // const rows = [createData("55555", "1111232", new Date(), "Carlo", 23232, "sdsds")];
+  console.log(data, fundDetails);
+
   const rows = data
-    ? data.map(({ dvNumber, checkNumber, date, description, amount, bank, id }) => {
+    ? data.map(({ dvNumber, checkNumber, date, description, payee, amount, bank, id }) => {
+        dvNumber = dvNumber ? dvNumber : "";
+        description = `Payee: ${payee} || Particulars: ${description}`;
         return createData(dvNumber, checkNumber, date, description, amount, `${bank.acronym}`, id);
       })
     : [];
 
-  console.log(fundDetails);
+  const total = data ? data.reduce((n, { amount }) => n + amount, 0) : 0;
 
   return (
     <>
       {fundDetails && (
-        <Typography gutterBottom variant="h6">
-          {" "}
-          {status} CHECK | {fundDetails.fund.section} Fund {fundDetails.acronym} |{" "}
-          <Typography component="span">{from}</Typography> |{" "}
-          <Typography component="span">{to}</Typography>
-        </Typography>
+        <Stack
+          sx={{
+            bgcolor: "primary.main",
+            color: "white",
+            p: 3,
+            mb: 3,
+            borderRadius: "5px",
+            flexDirection: { md: "row", xs: "column" },
+            justifyContent: { md: "space-between", xs: "flex-start" },
+            alignItems: { md: "center" },
+          }}
+        >
+          <Box>
+            <Typography gutterBottom variant="h4">
+              {status} CHECK
+            </Typography>
+            <Typography>
+              {fundDetails.fund.section} Fund {fundDetails.acronym} -{" "}
+              <Typography component="span">{from}</Typography> |{" "}
+              <Typography component="span">{to}</Typography>
+            </Typography>
+          </Box>
+
+          <Typography
+            gutterBottom
+            sx={{
+              fontSize: { md: 25, xs: 20 },
+            }}
+          >
+            TOTAL - &#8369; {total.toLocaleString("en-US")}
+          </Typography>
+        </Stack>
       )}
 
       <Paper sx={{ width: "100%", overflow: "hidden" }}>
+        {(isCancelling || isReleasing) && <LinearProgress />}
         <TableContainer>
           <Table stickyHeader aria-label="sticky table">
             <TableHead>
@@ -178,7 +262,9 @@ export default function MuiTable({ to, from, status, bankId }: Props) {
                     style={{
                       maxWidth: column.maxWidth,
                       width: "500px",
-                      display: `${status === "RELEASED" && column.id === "checkId" ? "none" : ""}`,
+                      display: `${
+                        status !== "UNRELEASED" && column.id === "checkId" ? "none" : ""
+                      }`,
                     }}
                   >
                     {column.label}
@@ -186,6 +272,7 @@ export default function MuiTable({ to, from, status, bankId }: Props) {
                 ))}
               </StyledTableRow>
             </TableHead>
+
             <TableBody>
               {rows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
                 return (
@@ -198,7 +285,7 @@ export default function MuiTable({ to, from, status, bankId }: Props) {
                           align={column.align}
                           sx={{
                             display: `${
-                              status === "RELEASED" && column.id === "checkId" ? "none" : ""
+                              status !== "UNRELEASED" && column.id === "checkId" ? "none" : ""
                             }`,
                           }}
                         >
@@ -211,23 +298,34 @@ export default function MuiTable({ to, from, status, bankId }: Props) {
                             column.formatDate &&
                             column.formatDate(value)}
                           {typeof value === "string" && value}
-
                           {column.id === "checkId" ? (
-                            <ButtonGroup>
-                              <IconButton
-                                onClick={() => {
-                                  released({ checkId: value as number });
-                                }}
-                              >
-                                <NoteIcon color="success" />
-                              </IconButton>
-                              <IconButton>
-                                <EditIcon color="info" />
-                              </IconButton>
-                              <IconButton>
-                                <StrikethroughSIcon color="error" />
-                              </IconButton>
-                            </ButtonGroup>
+                            <>
+                              <ButtonGroup>
+                                <IconButton
+                                  onClick={() => {
+                                    released({ checkId: value as number });
+                                  }}
+                                >
+                                  <NoteIcon color="success" />
+                                </IconButton>
+                                {sessionData?.user?.role === "ADMIN" && (
+                                  <>
+                                    <EditCheck
+                                      checkId={row["checkId"]}
+                                      checkNumber={row["checkNumber"]}
+                                      lastAmount={row["amount"]}
+                                    />
+                                    <IconButton
+                                      onClick={() => {
+                                        cancelled({ checkId: value as number });
+                                      }}
+                                    >
+                                      <StrikethroughSIcon color="error" />
+                                    </IconButton>
+                                  </>
+                                )}
+                              </ButtonGroup>
+                            </>
                           ) : (
                             ""
                           )}
@@ -240,6 +338,11 @@ export default function MuiTable({ to, from, status, bankId }: Props) {
             </TableBody>
           </Table>
         </TableContainer>
+        {isSuccess && data.length === 0 && (
+          <Typography align="center" p={5}>
+            No Records Found!
+          </Typography>
+        )}
         <TablePagination
           rowsPerPageOptions={[10, 25, 100]}
           component="div"
@@ -250,6 +353,12 @@ export default function MuiTable({ to, from, status, bankId }: Props) {
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
       </Paper>
+
+      <Snackbar open={openAlert} autoHideDuration={3000} onClose={handleCloseAlert}>
+        <Alert onClose={handleCloseAlert} severity={alertSeverity} sx={{ width: "100%" }}>
+          {alertMessage}
+        </Alert>
+      </Snackbar>
     </>
   );
 }

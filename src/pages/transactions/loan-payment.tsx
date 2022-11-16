@@ -1,8 +1,23 @@
 import { type NextPage } from "next";
+import type { GetServerSideProps } from "next";
+
+import { getSession } from "next-auth/react";
+
+import { trpc } from "../../utils/trpc";
 
 import { useState } from "react";
 
-import { Box, TextField, Typography, Stack, InputLabel, FormControl, Select } from "@mui/material";
+import {
+  Box,
+  TextField,
+  Typography,
+  Stack,
+  InputLabel,
+  FormControl,
+  Select,
+  Button,
+  LinearProgress,
+} from "@mui/material";
 
 import dayjs, { Dayjs } from "dayjs";
 import { DesktopDatePicker } from "@mui/x-date-pickers/DesktopDatePicker";
@@ -10,10 +25,6 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
 import PercentIcon from "@mui/icons-material/Percent";
-import Button from "@mui/material/Button";
-import LinearProgress from "@mui/material/LinearProgress";
-
-import { trpc } from "../../utils/trpc";
 
 import { useForm, SubmitHandler } from "react-hook-form";
 
@@ -33,6 +44,7 @@ type FormValues = {
   dvNumber: string;
   checkNumber: string;
   description: string;
+  payee: string;
   amount: string;
 };
 
@@ -48,10 +60,6 @@ const LoanPayment: NextPage = () => {
   const [dateError, setDateError] = useState<string | undefined>();
   const [value, setValue] = useState<Dayjs | null>(null);
 
-  const handleDateChange = (newValue: Dayjs | null) => {
-    setValue(newValue);
-  };
-
   const {
     register,
     handleSubmit,
@@ -59,8 +67,12 @@ const LoanPayment: NextPage = () => {
     // formState: { errors },
   } = useForm<FormValues>();
 
+  const handleDateChange = (newValue: Dayjs | null) => {
+    setValue(newValue);
+  };
+
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
-    const { bankId, dvNumber, checkNumber, description, amount } = data;
+    const { bankId, dvNumber, checkNumber, description, amount, payee } = data;
     if (value) {
       const pastDate = new Date();
       const minusOneTime = pastDate.setDate(pastDate.getDate() - 2);
@@ -72,6 +84,7 @@ const LoanPayment: NextPage = () => {
         action: "LOAN",
         bankId: bankId,
         dvNumber: dvNumber,
+        payee: payee,
         checkNumber: checkNumber,
         date: value.toDate(),
         description: description,
@@ -82,6 +95,7 @@ const LoanPayment: NextPage = () => {
         action: "LOAN",
         bankId: bankId,
         dvNumber: dvNumber,
+        payee: payee,
         checkNumber: checkNumber,
         date: new Date(),
         description: description,
@@ -167,7 +181,6 @@ const LoanPayment: NextPage = () => {
                 id="outlined-number"
                 label="Enter DV Number"
                 type="number"
-                required
                 {...register("dvNumber")}
                 // InputLabelProps={{
                 //   shrink: true,
@@ -222,11 +235,22 @@ const LoanPayment: NextPage = () => {
           </Stack>
 
           <Stack>
-            <Typography mb={1.5}>Payee/Particulars</Typography>
+            <Typography mb={1.5}>Payee</Typography>
             <TextField
               id="outlined-basic"
               variant="outlined"
-              label="Enter Payee/Particulars"
+              label="Enter Payee"
+              required
+              {...register("payee")}
+            ></TextField>
+          </Stack>
+
+          <Stack>
+            <Typography mb={1.5}>Particulars</Typography>
+            <TextField
+              id="outlined-basic"
+              variant="outlined"
+              label="Enter Particulars"
               multiline
               required
               {...register("description")}
@@ -239,7 +263,8 @@ const LoanPayment: NextPage = () => {
             <TextField
               id="outlined-number"
               label="Enter Net Amound Paid"
-              type="float"
+              helperText="Numeric value only"
+              inputProps={{ inputMode: "numeric", pattern: "[+-]?([0-9]*[.])?[0-9]+" }}
               required
               {...register("amount")}
             />
@@ -258,3 +283,20 @@ const LoanPayment: NextPage = () => {
 };
 
 export default LoanPayment;
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const session = await getSession(context);
+
+  if (!session) {
+    return {
+      redirect: {
+        destination: "/",
+        permanent: false,
+      },
+    };
+  }
+
+  return {
+    props: { session },
+  };
+};

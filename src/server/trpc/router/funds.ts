@@ -1,16 +1,16 @@
 import { z } from "zod";
 
-import { router, publicProcedure } from "../trpc";
+import { router, protectedProcedure } from "../trpc";
 
 export const fundsRouter = router({
-  getAll: publicProcedure.query(({ ctx }) => {
+  getAll: protectedProcedure.query(({ ctx }) => {
     return ctx.prisma.fund.findMany({
       include: {
         bank: true,
       },
     });
   }),
-  getSpecificFunds: publicProcedure
+  getSpecificFunds: protectedProcedure
     .input(z.object({ section: z.enum(["GENERAL", "SEF", "TRUST"]) }))
     .query(({ ctx, input }) => {
       return ctx.prisma.fund.findFirst({
@@ -23,7 +23,7 @@ export const fundsRouter = router({
       });
     }),
 
-  transact: publicProcedure
+  transact: protectedProcedure
     .input(
       z.object({
         action: z.enum(["DIRECT", "CASHDEPOSIT", "LOAN"]),
@@ -33,12 +33,22 @@ export const fundsRouter = router({
         bankId: z.string(),
         amount: z.string(),
         description: z.string(),
+        payee: z.string().optional(),
         date: z.date(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      let { action, bankId, amount, description, date, dvNumber, checkNumber, depositNumber } =
-        input;
+      const {
+        action,
+        bankId,
+        amount,
+        description,
+        payee,
+        date,
+        dvNumber,
+        checkNumber,
+        depositNumber,
+      } = input;
 
       const bankData = await ctx.prisma.bank.findFirst({
         where: {
@@ -70,7 +80,7 @@ export const fundsRouter = router({
               description: description,
               amount: parseFloat(amount),
               bankId: bankId,
-              userId: "cla979of70000f1pgzi50s8wt",
+              userId: ctx.session.user.id,
               depositNumber: depositNumber,
               // userId: ctx.session?.user?.id as string,
             },
@@ -78,7 +88,7 @@ export const fundsRouter = router({
         ]);
       }
 
-      if (action === "LOAN" && dvNumber && checkNumber) {
+      if (action === "LOAN" && checkNumber && payee) {
         newEndingBalance = bankData.endingBalance - parseFloat(amount);
 
         await ctx.prisma.$transaction([
@@ -95,9 +105,10 @@ export const fundsRouter = router({
               action: action,
               date: date,
               description: description,
+              payee: payee,
               amount: parseFloat(amount),
               bankId: bankId,
-              userId: "cla979of70000f1pgzi50s8wt",
+              userId: ctx.session.user.id,
               checkNumber: checkNumber,
               dvNumber: dvNumber,
               // userId: ctx.session?.user?.id as string,
@@ -106,10 +117,11 @@ export const fundsRouter = router({
           ctx.prisma.check.create({
             data: {
               date: date,
+              payee: payee,
               description: description,
               amount: parseFloat(amount),
               bankId: bankId,
-              userId: "cla979of70000f1pgzi50s8wt",
+              userId: ctx.session.user.id,
               checkNumber: checkNumber,
               dvNumber: dvNumber,
               status: "UNRELEASED",
