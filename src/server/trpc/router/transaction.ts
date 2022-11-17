@@ -10,7 +10,7 @@ export const transactionRouter = router({
       },
 
       orderBy: {
-        date: "desc",
+        createAt: "desc",
       },
     });
 

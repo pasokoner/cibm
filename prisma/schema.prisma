@@ -3,7 +3,7 @@
 
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["referentialIntegrity"]
+  previewFeatures = ["referentialIntegrity", "interactiveTransactions"]
 }
 
 datasource db {
@@ -100,7 +100,7 @@ enum FundStatus {
 
 model Fund {
   id      String      @id @default(uuid())
-  section FundSection
+  section FundSection @unique
   status  FundStatus
   bank    Bank[]
 }
@@ -115,6 +115,8 @@ model Bank {
   fund        Fund          @relation(fields: [fundId], references: [id], onDelete: Cascade)
   transaction Transaction[]
   Check       Check[]
+
+  @@unique([fundId, acronym])
 }
 
 enum Action {
@@ -132,10 +134,11 @@ model Transaction {
   payee         String?
   description   String
   dvNumber      String?
-  checkNumber   String?
+  checkNumber   String?  @unique
   depositNumber String?
   userId        String
   bankId        String
+  createAt      DateTime @default(now())
 
   bank Bank @relation(fields: [bankId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -154,7 +157,7 @@ model Check {
   payee       String
   description String
   dvNumber    String?
-  checkNumber String
+  checkNumber String      @unique
   status      CheckStatus
   userId      String
   bankId      String

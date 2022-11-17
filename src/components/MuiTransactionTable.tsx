@@ -198,6 +198,16 @@ export default function MuiTransacationTable({ bankId }: Props) {
         </Stack>
       )}
 
+      <Typography
+        sx={{
+          p: 2,
+          bgcolor: "primary.main",
+          color: "white",
+        }}
+      >
+        Showing history of transaction order by creation date
+      </Typography>
+
       <Paper sx={{ width: "100%", overflow: "hidden" }}>
         <TableContainer>
           <Table stickyHeader aria-label="sticky table">

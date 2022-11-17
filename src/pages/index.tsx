@@ -9,9 +9,11 @@ import Grid from "@mui/material/Grid";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import Typography from "@mui/material/Typography";
 import GoogleIcon from "@mui/icons-material/Google";
+import { Stack } from "@mui/material";
 
 import { signIn, useSession } from "next-auth/react";
-import { Stack } from "@mui/system";
+
+import SheetJSReactAoO from "../components/TryExcel";
 
 function Copyright(props: any) {
   return (
@@ -29,15 +31,6 @@ function Copyright(props: any) {
 export default function SignInSide() {
   const { data: sessionData } = useSession();
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    console.log({
-      email: data.get("email"),
-      password: data.get("password"),
-    });
-  };
-
   if (sessionData) {
     return (
       <Stack alignContent="center" alignItems="center">
@@ -45,6 +38,8 @@ export default function SignInSide() {
           Welcome to CIBM System
         </Typography>
         <Typography>You are login as {sessionData.user?.name}</Typography>
+
+        <SheetJSReactAoO />
       </Stack>
     );
   }
@@ -83,7 +78,7 @@ export default function SignInSide() {
           <Typography component="h1" variant="h5">
             Welcome to CIBM System
           </Typography>
-          <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1 }}>
+          <Box component="form" sx={{ mt: 1 }}>
             <Button
               type="submit"
               fullWidth
