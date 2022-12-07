@@ -10,6 +10,8 @@ import { Button, Typography } from "@mui/material";
 import { signIn, signOut } from "next-auth/react";
 import { Stack } from "@mui/system";
 
+import Head from "next/head";
+
 type Props = {
   children: React.ReactNode;
 };
@@ -24,6 +26,14 @@ const Layout = ({ children }: Props) => {
 
   return (
     <ThemeProvider theme={muiTheme}>
+      <Head>
+        <title>CIBM System</title>
+        <meta
+          property="og:title"
+          content="Provincial Governor's Office - CIBM System"
+          key="title"
+        />
+      </Head>
       <CssBaseline />
       {sessionData && (sessionData.user?.role === "ADMIN" || validUser?.isValid) && (
         <MuiDrawer>{children}</MuiDrawer>
