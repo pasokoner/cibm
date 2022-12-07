@@ -14,7 +14,7 @@ export const portingRouter = router({
             amount: z.number(),
             date: z.date(),
             payee: z.string(),
-            description: z.string(),
+            description: z.string().optional(),
             dvNumber: z.string().optional(),
             checkNumber: z.string(),
           })
@@ -22,7 +22,7 @@ export const portingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const { totalAmount, data: seedData, fundSection, bankAcronym } = input;
+      const { data: seedData, fundSection, bankAcronym } = input;
 
       const bank = await ctx.prisma.bank.findFirst({
         where: {
@@ -34,14 +34,13 @@ export const portingRouter = router({
       });
 
       if (bank) {
-        const newEndingBalance = bank.endingBalance - totalAmount;
-
         const transactionSeeds = seedData.map((d) => {
           return {
             action: "LOAN" as "LOAN" | "DIRECT" | "CASHDEPOSIT" | "EDITLOAN",
             bankId: bank.id,
             userId: ctx.session.user.id,
             ...d,
+            amount: -d.amount,
           };
         });
 
@@ -51,18 +50,11 @@ export const portingRouter = router({
             userId: ctx.session.user.id,
             status: "UNRELEASED" as "UNRELEASED" | "RELEASED",
             ...d,
+            amount: -d.amount,
           };
         });
 
         await ctx.prisma.$transaction([
-          ctx.prisma.bank.update({
-            where: {
-              id: bank.id,
-            },
-            data: {
-              endingBalance: newEndingBalance,
-            },
-          }),
           ctx.prisma.transaction.createMany({
             data: transactionSeeds,
 
@@ -76,6 +68,13 @@ export const portingRouter = router({
         ]);
       }
 
-      return {};
+      return { message: `LOAN from ${fundSection} - ${bankAcronym} successfully imported` };
     }),
+
+  deleteAll: protectedProcedure.mutation(async ({ ctx }) => {
+    await ctx.prisma.transaction.deleteMany({});
+    await ctx.prisma.check.deleteMany({});
+
+    return {};
+  }),
 });

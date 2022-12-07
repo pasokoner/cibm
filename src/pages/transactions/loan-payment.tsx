@@ -51,7 +51,14 @@ type FormValues = {
 const LoanPayment: NextPage = () => {
   const { data } = trpc.funds.getAll.useQuery();
 
-  const { mutate, isSuccess, isLoading } = trpc.funds.transact.useMutation({
+  const {
+    mutate,
+    isSuccess,
+    isLoading,
+    data: message,
+    isError,
+    error,
+  } = trpc.funds.transact.useMutation({
     onSuccess: () => {
       reset();
     },
@@ -212,7 +219,7 @@ const LoanPayment: NextPage = () => {
               sx={{
                 width: "50%",
               }}
-            >
+            > 
               <Typography mb={1.5}>Date of Check</Typography>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DesktopDatePicker
@@ -263,14 +270,16 @@ const LoanPayment: NextPage = () => {
             <TextField
               id="outlined-number"
               label="Enter Net Amound Paid"
-              helperText="Numeric value only"
-              inputProps={{ inputMode: "numeric", pattern: "[+-]?([0-9]*[.])?[0-9]+" }}
+              helperText="Numeric positive value only"
+              inputProps={{ inputMode: "numeric", pattern: "[+]?([0-9]*[.])?[0-9]+" }}
               required
               {...register("amount")}
             />
           </Stack>
 
-          {isSuccess && <Typography color="success.main">Transaction success!</Typography>}
+          {isError && <Typography color="error.main">{error.message}</Typography>}
+
+          {isSuccess && <Typography color="success.main">{message.message}</Typography>}
 
           {isLoading && <LinearProgress />}
           <Button endIcon={<PercentIcon />} variant="contained" type="submit" disabled={isLoading}>

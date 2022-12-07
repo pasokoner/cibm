@@ -16,7 +16,6 @@ import {
   Box,
   Button,
   ButtonGroup,
-  IconButton,
   Typography,
   CircularProgress,
   Stack,
@@ -109,9 +108,20 @@ type Props = {
   bankId: string;
 };
 
+type OrderType = {
+  createdAt: "asc" | "desc" | undefined;
+  date: "asc" | "desc" | undefined;
+};
+
 export default function MuiTransacationTable({ bankId }: Props) {
-  const { data, isLoading, refetch, isSuccess } = trpc.transaction.getAll.useQuery({
+  const [order, setOrder] = React.useState<OrderType>({
+    createdAt: undefined,
+    date: "desc",
+  });
+
+  const { data, isLoading, isSuccess } = trpc.transaction.getAll.useQuery({
     bankId: bankId,
+    ...order,
   });
 
   const { data: fundDetails } = trpc.bank.details.useQuery({
@@ -145,13 +155,28 @@ export default function MuiTransacationTable({ bankId }: Props) {
     );
   }
 
+  const orderByCreation = () => {
+    setOrder({
+      createdAt: "desc",
+      date: undefined,
+    });
+  };
+
+  const orderByDate = () => {
+    setOrder({
+      createdAt: undefined,
+      date: "desc",
+    });
+  };
+
   // const rows = [createData("55555", "1111232", new Date(), "Carlo", 23232, "sdsds")];
-  const rows = data
-    ? data.map(
+  const rows = data?.transactions
+    ? data.transactions.map(
         ({ action, dvNumber, checkNumber, depositNumber, payee, date, description, amount }) => {
           dvNumber = dvNumber ? dvNumber : "";
           checkNumber = checkNumber ? checkNumber : "";
           depositNumber = depositNumber ? depositNumber : "";
+          description = description ? description : "";
 
           description =
             payee && description ? `Payee: ${payee} || Particulars: ${description}` : description;
@@ -171,7 +196,7 @@ export default function MuiTransacationTable({ bankId }: Props) {
 
   return (
     <>
-      {fundDetails && (
+      {fundDetails && data && (
         <Stack
           sx={{
             bgcolor: "primary.main",
@@ -193,20 +218,46 @@ export default function MuiTransacationTable({ bankId }: Props) {
               fontSize: { md: 25, xs: 20 },
             }}
           >
-            Ending Balance - &#8369; {fundDetails.endingBalance.toLocaleString("en-US")}
+            Ending Balance &#8369;{" "}
+            {data.totalAmount ? data.totalAmount?.toLocaleString("en-US") : 0}
           </Typography>
         </Stack>
       )}
 
-      <Typography
+      <Stack
+        direction="row"
+        gap={2}
         sx={{
           p: 2,
           bgcolor: "primary.main",
           color: "white",
+          alignItems: "center",
         }}
       >
-        Showing history of transaction order by creation date
-      </Typography>
+        <Typography>Showing history of transaction order by </Typography>
+
+        <ButtonGroup
+          variant="contained"
+          sx={{
+            "& .MuiButton-root": {
+              color: "white",
+              bgcolor: "primary.light",
+            },
+
+            "& .Mui-disabled": {
+              color: "warning",
+              bgcolor: "warning.dark",
+            },
+          }}
+        >
+          <Button disabled={order.date ? true : false} onClick={orderByDate}>
+            Check date
+          </Button>
+          <Button disabled={order.createdAt ? true : false} onClick={orderByCreation}>
+            Creation
+          </Button>
+        </ButtonGroup>
+      </Stack>
 
       <Paper sx={{ width: "100%", overflow: "hidden" }}>
         <TableContainer>
@@ -253,7 +304,7 @@ export default function MuiTransacationTable({ bankId }: Props) {
             </TableBody>
           </Table>
         </TableContainer>
-        {isSuccess && data.length === 0 && (
+        {isSuccess && data && data.transactions?.length === 0 && (
           <Typography align="center" p={5}>
             No Records Found!
           </Typography>

@@ -205,6 +205,7 @@ export default function MuiTable({ to, from, status, bankId }: Props) {
   const rows = data
     ? data.map(({ dvNumber, checkNumber, date, description, payee, amount, bank, id }) => {
         dvNumber = dvNumber ? dvNumber : "";
+        description = description ? description : "";
         description = `Payee: ${payee} || Particulars: ${description}`;
         return createData(dvNumber, checkNumber, date, description, amount, `${bank.acronym}`, id);
       })

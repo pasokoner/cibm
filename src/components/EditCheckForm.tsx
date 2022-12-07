@@ -28,10 +28,11 @@ type FormValues = {
 type Props = {
   checkId: number;
   lastAmount: number;
+  lastCheckNumber: string;
 };
 
 const EditCheckForm = (props: Props) => {
-  const { checkId, lastAmount } = props;
+  const { checkId, lastAmount, lastCheckNumber } = props;
 
   const router = useRouter();
 
@@ -66,6 +67,7 @@ const EditCheckForm = (props: Props) => {
         description: description,
         amount: amount,
         lastAmount: lastAmount,
+        lastCheckNumber: lastCheckNumber,
       });
     } else {
       mutate({
@@ -77,6 +79,7 @@ const EditCheckForm = (props: Props) => {
         description: description,
         amount: amount,
         lastAmount: lastAmount,
+        lastCheckNumber: lastCheckNumber,
       });
     }
   };

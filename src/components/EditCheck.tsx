@@ -60,7 +60,7 @@ const EditCheck = (props: Props) => {
               <CloseIcon />
             </IconButton>
           </Stack>
-          <EditCheckForm checkId={checkId} lastAmount={lastAmount} />
+          <EditCheckForm checkId={checkId} lastAmount={lastAmount} lastCheckNumber={checkNumber} />
         </Stack>
       </Backdrop>
     </>

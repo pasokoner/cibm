@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { router, protectedProcedure } from "../trpc";
@@ -56,23 +57,12 @@ export const fundsRouter = router({
         },
       });
 
-      if (!bankData?.endingBalance) {
+      if (!bankData) {
         throw new Error(`Bank does not exist`);
       }
 
-      let newEndingBalance = 0;
-
       if (action === "DIRECT" || action === "CASHDEPOSIT") {
-        newEndingBalance = bankData.endingBalance + parseFloat(amount);
         await ctx.prisma.$transaction([
-          ctx.prisma.bank.update({
-            where: {
-              id: bankId,
-            },
-            data: {
-              endingBalance: newEndingBalance,
-            },
-          }),
           ctx.prisma.transaction.create({
             data: {
               action: action,
@@ -89,46 +79,45 @@ export const fundsRouter = router({
       }
 
       if (action === "LOAN" && checkNumber && payee) {
-        newEndingBalance = bankData.endingBalance - parseFloat(amount);
-
-        await ctx.prisma.$transaction([
-          ctx.prisma.bank.update({
-            where: {
-              id: bankId,
-            },
-            data: {
-              endingBalance: newEndingBalance,
-            },
-          }),
-          ctx.prisma.transaction.create({
-            data: {
-              action: action,
-              date: date,
-              description: description,
-              payee: payee,
-              amount: parseFloat(amount),
-              bankId: bankId,
-              userId: ctx.session.user.id,
-              checkNumber: checkNumber,
-              dvNumber: dvNumber,
-              // userId: ctx.session?.user?.id as string,
-            },
-          }),
-          ctx.prisma.check.create({
-            data: {
-              date: date,
-              payee: payee,
-              description: description,
-              amount: parseFloat(amount),
-              bankId: bankId,
-              userId: ctx.session.user.id,
-              checkNumber: checkNumber,
-              dvNumber: dvNumber,
-              status: "UNRELEASED",
-              // userId: ctx.session?.user?.id as string,
-            },
-          }),
-        ]);
+        try {
+          await ctx.prisma.$transaction([
+            ctx.prisma.transaction.create({
+              data: {
+                action: action,
+                date: date,
+                description: description,
+                payee: payee,
+                amount: -parseFloat(amount),
+                bankId: bankId,
+                userId: ctx.session.user.id,
+                checkNumber: checkNumber,
+                dvNumber: dvNumber,
+                // userId: ctx.session?.user?.id as string,
+              },
+            }),
+            ctx.prisma.check.create({
+              data: {
+                date: date,
+                payee: payee,
+                description: description,
+                amount: -parseFloat(amount),
+                bankId: bankId,
+                userId: ctx.session.user.id,
+                checkNumber: checkNumber,
+                dvNumber: dvNumber,
+                status: "UNRELEASED",
+                // userId: ctx.session?.user?.id as string,
+              },
+            }),
+          ]);
+        } catch (error) {
+          console.log(error);
+          if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            if (error.code === "P2002") {
+              throw new Error("Check number already exist");
+            }
+          }
+        }
       }
 
       return { message: "Transaction successed" };

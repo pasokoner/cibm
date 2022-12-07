@@ -13,8 +13,6 @@ import { Stack } from "@mui/material";
 
 import { signIn, useSession } from "next-auth/react";
 
-import SheetJSReactAoO from "../components/TryExcel";
-
 function Copyright(props: any) {
   return (
     <Typography variant="body2" color="text.secondary" align="center" {...props}>
@@ -38,8 +36,6 @@ export default function SignInSide() {
           Welcome to CIBM System
         </Typography>
         <Typography>You are login as {sessionData.user?.name}</Typography>
-
-        <SheetJSReactAoO />
       </Stack>
     );
   }

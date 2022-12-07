@@ -25,7 +25,7 @@ type Props = {
 type NewBankFormValues = {
   name: string;
   acronym: string;
-  endingBalance: string;
+  // endingBalance: string;
 };
 
 const AddBank = (props: Props) => {
@@ -48,7 +48,6 @@ const AddBank = (props: Props) => {
   const {
     register,
     handleSubmit,
-    reset,
     // formState: { errors },
   } = useForm<NewBankFormValues>();
 
@@ -86,13 +85,13 @@ const AddBank = (props: Props) => {
         <TextField label="Enter Bank Name" {...register("name")} />
         <Typography>Bank Acronym</Typography>
         <TextField label="Enter Bank Acronym" {...register("acronym")} />
-        <Typography>Account Balance</Typography>
-        <TextField
+        {/* <Typography>Account Balance</Typography> */}
+        {/* <TextField
           label="Enter Account Balance"
           helperText="Numeric value only"
           inputProps={{ inputMode: "numeric", pattern: "[+-]?([0-9]*[.])?[0-9]+" }}
           {...register("endingBalance")}
-        />
+        /> */}
         {isError && <Typography color="error">{error.message}</Typography>}
         {isSuccess && <Typography color="success.main">Bank is Added!</Typography>}
         {isLoading && <LinearProgress />}

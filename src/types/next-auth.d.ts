@@ -10,4 +10,13 @@ declare module "next-auth" {
       role: "USER" | "ADMIN";
     } & DefaultSession["user"];
   }
+  interface User {
+    role: "ADMIN" | "USER";
+  }
+}
+
+declare module "next-auth/adapters" {
+  interface AdapterUser {
+    role: "ADMIN" | "USER";
+  }
 }

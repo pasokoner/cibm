@@ -79,7 +79,7 @@ export const checkRouter = router({
         },
       });
 
-      return {};
+      return { message: "Successfully cancelled check" };
     }),
   edit: protectedProcedure
     .input(
@@ -96,67 +96,39 @@ export const checkRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const {
-        amount,
-        description,
-        payee,
-        date,
-        dvNumber,
-        checkNumber,
-        checkId,
-        lastAmount,
-        lastCheckNumber,
-      } = input;
+      const { amount, description, payee, date, dvNumber, checkNumber, checkId, lastCheckNumber } =
+        input;
 
-      const checkData = await ctx.prisma.check.findFirst({
-        where: {
-          id: checkId,
-        },
-
-        include: {
-          bank: true,
-        },
-      });
-
-      if (checkData) {
-        await ctx.prisma.$transaction([
-          ctx.prisma.bank.update({
-            where: {
-              id: checkData?.bankId,
-            },
-            data: {
-              endingBalance: checkData?.bank.endingBalance + lastAmount - parseFloat(amount),
-            },
-          }),
-          ctx.prisma.transaction.create({
-            data: {
-              action: "EDITLOAN",
-              bankId: checkData?.bankId,
-              date: date,
-              description: description,
-              payee: payee,
-              amount: parseFloat(amount),
-              userId: ctx.session.user.id,
-              checkNumber: checkNumber,
-              dvNumber: dvNumber,
-            },
-          }),
-          ctx.prisma.check.update({
-            where: {
-              id: checkId,
-            },
-            data: {
-              date: date,
-              description: description,
-              payee: payee,
-              amount: parseFloat(amount),
-              userId: ctx.session.user.id,
-              checkNumber: checkNumber,
-              dvNumber: dvNumber,
-            },
-          }),
-        ]);
-      }
+      await ctx.prisma.$transaction([
+        ctx.prisma.check.update({
+          where: {
+            id: checkId,
+          },
+          data: {
+            date: date,
+            description: description,
+            payee: payee,
+            amount: -parseFloat(amount),
+            userId: ctx.session.user.id,
+            checkNumber: checkNumber,
+            dvNumber: dvNumber,
+          },
+        }),
+        ctx.prisma.transaction.update({
+          where: {
+            checkNumber: lastCheckNumber,
+          },
+          data: {
+            date: date,
+            description: description,
+            payee: payee,
+            amount: -parseFloat(amount),
+            userId: ctx.session.user.id,
+            checkNumber: checkNumber,
+            dvNumber: dvNumber,
+          },
+        }),
+      ]);
 
       return { message: "Successfully edited check" };
     }),

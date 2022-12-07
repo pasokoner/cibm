@@ -72,6 +72,8 @@ const DirectDeposit: NextPage = () => {
   const onSubmit: SubmitHandler<FormValues> = async (data) => {
     const { bankId, depositNumber, description, amount } = data;
 
+    console.log(bankId);
+
     if (value) {
       const pastDate = new Date();
       const minusOneTime = pastDate.setDate(pastDate.getDate() - 2);
@@ -220,8 +222,8 @@ const DirectDeposit: NextPage = () => {
             <TextField
               id="outlined-number"
               label="Enter Cash Receipt"
-              helperText="Numeric value only"
-              inputProps={{ inputMode: "numeric", pattern: "[+-]?([0-9]*[.])?[0-9]+" }}
+              helperText="Numeric positive value only"
+              inputProps={{ inputMode: "numeric", pattern: "[+]?([0-9]*[.])?[0-9]+" }}
               required
               {...register("amount")}
             />

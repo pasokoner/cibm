@@ -221,8 +221,8 @@ const Deposit: NextPage = () => {
             <TextField
               id="outlined-number"
               label="Enter Cash Receipt"
-              helperText="Numeric value only"
-              inputProps={{ inputMode: "numeric", pattern: "[+-]?([0-9]*[.])?[0-9]+" }}
+              helperText="Numeric positive value only"
+              inputProps={{ inputMode: "numeric", pattern: "[+]?([0-9]*[.])?[0-9]+" }}
               required
               {...register("amount")}
             />

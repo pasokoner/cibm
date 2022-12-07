@@ -37,8 +37,11 @@ export default function MuiFundsItem({ section, icon }: Props) {
   };
 
   const handleOpenAdd = () => {
+    console.log("SDSD");
     setOpenAdd(!openAdd);
   };
+
+  console.log(data);
 
   return (
     <>

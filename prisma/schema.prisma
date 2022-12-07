@@ -132,7 +132,7 @@ model Transaction {
   action        Action
   date          DateTime
   payee         String?
-  description   String
+  description   String?
   dvNumber      String?
   checkNumber   String?  @unique
   depositNumber String?
@@ -141,7 +141,7 @@ model Transaction {
   createAt      DateTime @default(now())
 
   bank Bank @relation(fields: [bankId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
 }
 
 enum CheckStatus {
@@ -155,7 +155,7 @@ model Check {
   amount      Float
   date        DateTime
   payee       String
-  description String
+  description String?
   dvNumber    String?
   checkNumber String      @unique
   status      CheckStatus
@@ -164,5 +164,5 @@ model Check {
   updatedAt   DateTime    @updatedAt
 
   bank Bank @relation(fields: [bankId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
 }

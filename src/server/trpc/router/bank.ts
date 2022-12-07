@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { router, publicProcedure, protectedProcedure } from "../trpc";
+import { router, protectedProcedure } from "../trpc";
 
 export const bankRouter = router({
   details: protectedProcedure
@@ -29,16 +29,15 @@ export const bankRouter = router({
         fundId: z.string(),
         name: z.string(),
         acronym: z.string(),
-        endingBalance: z.string(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const { fundId, name, acronym, endingBalance } = input;
+      const { fundId, name, acronym } = input;
 
       const data = await ctx.prisma.bank.create({
         data: {
           fundId: fundId,
-          endingBalance: parseFloat(endingBalance),
+          endingBalance: 0,
           name: name,
           acronym: acronym,
         },

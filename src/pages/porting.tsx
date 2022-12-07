@@ -1,9 +1,10 @@
-import { group } from "console";
-import React, { useCallback, useEffect, useState } from "react";
+import React from "react";
 import * as XLSX from "xlsx";
 import { trpc } from "../utils/trpc";
 
 import _ from "lodash";
+import { Button, Typography, Stack } from "@mui/material";
+import PopperPopupState from "../components/MuiPopper";
 
 interface Fund {
   Check: number;
@@ -43,28 +44,28 @@ const excelDateToJSDate = (serial: number) => {
 
 const section = ["TRUST", "GENERAL", "SEF"];
 
-enum Section {
-  TRUST,
-  GENERAL,
-  SEF,
-}
-
 type Seeds = {
   bankAcronym: string;
   checkNumber: string;
   date: Date;
-  description: string;
+  description?: string;
   amount: number;
   payee: string;
   fundSection: "GENERAL" | "SEF" | "TRUST";
 };
 
-export default function SheetJSReactAoO() {
+const Porting = () => {
   /* the component state is an array of presidents */
 
-  const [seeds, setSeeds] = React.useState<Seeds[]>();
+  const [successText, setSuccessText] = React.useState<string[]>([]);
 
-  const { mutate } = trpc.porting.importLoan.useMutation({});
+  const { mutate } = trpc.porting.importLoan.useMutation({
+    onSuccess: (data) => {
+      setSuccessText((prevState) => [...prevState, data.message]);
+    },
+  });
+
+  const { mutate: deleteAll } = trpc.porting.deleteAll.useMutation();
 
   /* Fetch and update the state once */
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,14 +87,7 @@ export default function SheetJSReactAoO() {
             if (item.Status && item.Status === "Released") {
               return;
             }
-            if (
-              item.Date &&
-              item.Check &&
-              item.Payee &&
-              item.Particulars &&
-              item.Amount &&
-              item.Fund
-            ) {
+            if (item.Date && item.Check && item.Payee && item.Amount && item.Fund) {
               const sectionBank = item.Fund.split(" ");
 
               if (
@@ -101,16 +95,14 @@ export default function SheetJSReactAoO() {
                 section.includes(sectionBank[1].toUpperCase()) &&
                 sectionBank[0]
               ) {
-                // // console.log(excelDateToJSDate(item.Date));
-                // console.log(item);
                 const section = sectionBank[1].toUpperCase().trim();
                 const bankAcronym = sectionBank[0].toUpperCase().trim();
 
                 const dataSeed = {
                   bankAcronym: bankAcronym,
-                  checkNumber: item.Check.toString(),
+                  checkNumber: item.Check.toString().trim(),
                   date: excelDateToJSDate(item.Date),
-                  description: item.Particulars,
+                  description: item.Particulars ? item.Particulars : undefined,
                   amount: item.Amount,
                   payee: item.Payee,
                   fundSection: section as "GENERAL" | "SEF" | "TRUST",
@@ -132,25 +124,10 @@ export default function SheetJSReactAoO() {
           });
         });
 
-        // console.log(general);
-        // console.log(sef);
-        // console.log(trust);
-
         if (general) {
           const groups = _.groupBy(general, "bankAcronym");
 
-          // const groups = general.reduce(
-          //   (groups, item) => ({
-          //     ...groups,
-          //     [item.bankAcronym]: [...(groups[item.bankAcronym] || []), item],
-          //   }),
-          //   {}
-          // );
-
-          console.log(groups);
-
           _.forOwn(groups, function (value, key) {
-            console.log(value, key);
             const totalAmount = value.reduce((n, { amount }) => n + amount, 0);
 
             mutate({
@@ -160,27 +137,78 @@ export default function SheetJSReactAoO() {
               data: value,
             });
           });
+        }
 
-          // for (const bank in groups) {
-          //   const totalAmount = groups[bank].reduce((n, { amount }) => n + amount, 0);
+        if (sef) {
+          const groups = _.groupBy(sef, "bankAcronym");
 
-          //   console.log(totalAmount);
+          _.forOwn(groups, function (value, key) {
+            const totalAmount = value.reduce((n, { amount }) => n + amount, 0);
 
-          //   mutate({
-          //     totalAmount: totalAmount,
-          //     fundSection: "GENERAL",
-          //     bankAcronym: bank,
-          //     ...groups[bank],
-          //   });
-          // }
+            mutate({
+              totalAmount: totalAmount,
+              fundSection: "SEF",
+              bankAcronym: key,
+              data: value,
+            });
+          });
+        }
+
+        if (trust) {
+          const groups = _.groupBy(trust, "bankAcronym");
+
+          _.forOwn(groups, function (value, key) {
+            const totalAmount = value.reduce((n, { amount }) => n + amount, 0);
+
+            mutate({
+              totalAmount: totalAmount,
+              fundSection: "TRUST",
+              bankAcronym: key,
+              data: value,
+            });
+          });
         }
       }
     }
   };
 
   return (
-    <>
-      <input type="file" onChange={handleFile} />
-    </>
+    <Stack>
+      <Stack direction="row">
+        <Button variant="contained" component="label">
+          LOAN - UNRELEASED
+          <input type="file" hidden onChange={handleFile} />
+        </Button>
+        <PopperPopupState>
+          <Typography fontWeight="bold" mb={2}>
+            Things to consider when import files
+          </Typography>
+
+          <Stack gap={1} ml={2}>
+            <Typography fontWeight="bold">Things to consider when import files</Typography>
+            <Typography fontWeight="bold">Things to consider when import files</Typography>
+            <Typography fontWeight="bold">Things to consider when import files</Typography>
+            <Typography fontWeight="bold">Things to consider when import files</Typography>
+          </Stack>
+        </PopperPopupState>
+      </Stack>
+
+      <Button
+        onClick={() => {
+          deleteAll();
+        }}
+      >
+        Delete all
+      </Button>
+
+      {successText &&
+        successText.map((t, n) => (
+          <Typography color="success" key={n}>
+            {t}
+          </Typography>
+        ))}
+    </Stack>
   );
-}
+};
+
+export default Porting;
