@@ -26,14 +26,6 @@ const Layout = ({ children }: Props) => {
 
   return (
     <ThemeProvider theme={muiTheme}>
-      <Head>
-        <title>CIBM System</title>
-        <meta
-          property="og:title"
-          content="Provincial Governor's Office - CIBM System"
-          key="title"
-        />
-      </Head>
       <CssBaseline />
       {sessionData && (sessionData.user?.role === "ADMIN" || validUser?.isValid) && (
         <MuiDrawer>{children}</MuiDrawer>

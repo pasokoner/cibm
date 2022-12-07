@@ -7,12 +7,22 @@ import { trpc } from "../utils/trpc";
 
 import Layout from "../components/Layout";
 
+import Head from "next/head";
+
 const MyApp: AppType<{ session: Session | null }> = ({
   Component,
   pageProps: { session, ...pageProps },
 }) => {
   return (
     <SessionProvider session={session}>
+      <Head>
+        <title>CIBM System</title>
+        <meta
+          property="og:title"
+          content="Provincial Governor's Office - CIBM System"
+          key="title"
+        />
+      </Head>
       <Layout>
         <Component {...pageProps} />
       </Layout>
