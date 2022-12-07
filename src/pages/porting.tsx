@@ -80,8 +80,8 @@ const Porting = () => {
         const general: Seeds[] = [];
 
         workbook.SheetNames.forEach((item, i) => {
-          const worksheet = workbook.Sheets[workbook.SheetNames[i]];
-          const jsonData = XLSX.utils.sheet_to_json<Fund>(worksheet);
+          const worksheet = workbook.Sheets[`${workbook.SheetNames[i] as string}`];
+          const jsonData = XLSX.utils.sheet_to_json<Fund>(worksheet as XLSX.WorkSheet);
 
           jsonData.forEach((item) => {
             if (item.Status && item.Status === "Released") {
