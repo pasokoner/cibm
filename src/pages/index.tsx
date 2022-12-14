@@ -17,7 +17,7 @@ function Copyright(props: any) {
   return (
     <Typography variant="body2" color="text.secondary" align="center" {...props}>
       {"Copyright © PITO and Developed by "}
-      <Link color="inherit" href="https://jcarlo.dev/">
+      <Link color="inherit" href="https://www.linkedin.com/in/john-carlo-asilo-679047204/">
         John Carlo Asilo
       </Link>{" "}
       {new Date().getFullYear()}

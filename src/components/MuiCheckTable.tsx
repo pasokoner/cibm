@@ -68,7 +68,7 @@ const columns: readonly Column[] = [
     label: "Net Amount Paid",
     maxWidth: 100,
 
-    format: (value: number) => value.toLocaleString("en-US"),
+    format: (value: number) => Math.abs(value).toLocaleString("en-US"),
   },
   {
     id: "fund",
@@ -245,7 +245,7 @@ export default function MuiTable({ to, from, status, bankId }: Props) {
               fontSize: { md: 25, xs: 20 },
             }}
           >
-            TOTAL - &#8369; {total.toLocaleString("en-US")}
+            TOTAL - &#8369; {Math.abs(total).toLocaleString("en-US")}
           </Typography>
         </Stack>
       )}
