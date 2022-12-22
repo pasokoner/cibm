@@ -10,8 +10,6 @@ import { Button, Typography } from "@mui/material";
 import { signIn, signOut } from "next-auth/react";
 import { Stack } from "@mui/system";
 
-import Head from "next/head";
-
 type Props = {
   children: React.ReactNode;
 };

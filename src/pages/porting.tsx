@@ -1,4 +1,7 @@
 import React from "react";
+import type { GetServerSideProps } from "next";
+
+import { getSession } from "next-auth/react";
 import * as XLSX from "xlsx";
 import { trpc } from "../utils/trpc";
 
@@ -212,3 +215,20 @@ const Porting = () => {
 };
 
 export default Porting;
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const session = await getSession(context);
+
+  if (!session) {
+    return {
+      redirect: {
+        destination: "/",
+        permanent: false,
+      },
+    };
+  }
+
+  return {
+    props: { session },
+  };
+};

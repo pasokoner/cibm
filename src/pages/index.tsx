@@ -74,15 +74,14 @@ export default function SignInSide() {
           <Typography component="h1" variant="h5">
             Welcome to CIBM System
           </Typography>
-          <Box component="form" sx={{ mt: 1 }}>
+          <Box sx={{ mt: 1 }}>
             <Button
-              type="submit"
               fullWidth
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
               endIcon={<GoogleIcon />}
               onClick={() => {
-                signIn();
+                signIn("google");
               }}
             >
               Sign In with Google
