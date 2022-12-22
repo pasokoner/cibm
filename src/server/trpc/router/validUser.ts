@@ -2,7 +2,7 @@ import { router, protectedProcedure } from "../trpc";
 import { z } from "zod";
 
 export const validUserRouter = router({
-  getValid: protectedProcedure.query(async ({ ctx }) => {
+  getValid: protectedProcedure.input(z.object({})).query(async ({ ctx }) => {
     const data = await ctx.prisma.validUser.findFirst({
       where: {
         email: ctx.session.user.email as string,

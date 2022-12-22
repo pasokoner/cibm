@@ -11,7 +11,7 @@ import Typography from "@mui/material/Typography";
 import GoogleIcon from "@mui/icons-material/Google";
 import { Stack } from "@mui/material";
 
-import { signIn, useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 
 function Copyright(props: any) {
   return (

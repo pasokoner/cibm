@@ -17,8 +17,13 @@ type Props = {
 };
 
 const Layout = ({ children }: Props) => {
-  const { data: validUser } = trpc.valid.getValid.useQuery();
   const { data: sessionData, status } = useSession();
+  const { data: validUser } = trpc.valid.getValid.useQuery(
+    {},
+    {
+      enabled: !!sessionData,
+    }
+  );
 
   if (status === "loading") {
     return <></>;
